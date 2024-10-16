@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recherche de Combinaisons</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container-fluid">
+            <ul class="navbar-nav d-flex flex-row">
+              
+
+                <li class="nav-item mx-5">
+                    <a class="nav-link" href="https://www.linkedin.com/in/abdel-rahmane-herhira-a8094417a/" target="_blank" aria-label="LinkedIn" title="LinkedIn">
+                        <i class="fab fa-linkedin" style="font-size: 30px; color: #0077B5;"></i>
+                        Linkedin : Herhira abdel rahmane
+                    </a>
+                </li>
+
+                <li class="nav-item mx-5">
+                     <h1> <span class="navbar-text text-dark"> Recherche de Combinaison </span> </h1> 
+                </li>
+
+                <li class="nav-item mx-5">
+                    <a class="nav-link" href="https://github.com/herhira-abd/vba_module" target="_blank" >
+                        <i class="fab fa-github" style="font-size: 30px; color: #0077B5;"></i>
+                        Githib rep
+                    </a>
+              
+                </li>
+            </ul>
+            
+               
+
+        </div>    
+
+
+
+          
+    </nav>
+
+
+
+
+<div class="container mt-5">
+   <div class="mb-5">
+    Sure votre fichier EXCEL, Veuillez saisir les Montant dans la  <b>collonne B </b> , les libelle dans la <b> collonnes  A </b> | laisser la premiere ligne pour les titres <br>
+    Exemple : <br>
+    <table class="table text-center" style="width:50%">
+        <tr><th scope="col"></th><th scope="col">A </th>  <th scope="col">B </th></tr>
+        <tr> <th scope="row">1</th><td>Num facture </td>  <td>Montant </td></tr>
+        <tr> <th scope="row">2</th><td>FC_00012/24 </td>  <td> 45 000 </td></tr>
+        <tr> <th scope="row">3</th><td>FC_00016/24 </td>  <td>21 700 </td></tr>
+    </table>
+  
+   </div>
+
+    <div class="form-group col-6">
+        <label for="fileInput">Téléchargez votre fichier Excel :</label>
+        <input type="file" class="form-control" id="fileInput" accept=".xlsx, .xls">
+    </div>
+    <div class="col-6 mt-3">
+            <div class="input-group ">
+                <label for="cible" class="input-group-text bg-success text-white">Montant cible :</label>
+                <input type="number" class="form-control" id="cible">
+            </div>
+    </div>
+
+    <div class="col-4  mt-3">
+            <div class="input-group mt-2">
+                <span class="input-group-text">tolerence</span>
+                <input type="number" class="form-control" id="tolerence" value="0" step="0.01" max="10" min="0">
+            </div>
+    </div>
+
+
+    <div class="mt-5 col-4">
+        <button id="bt" class="btn btn-primary btn-block ">Chercher combinaison</button>
+    </div>
+
+
+
+    <div id="state" class="mt-4 col-12">
+
+    </div>
+
+    <div id="bt" class="mt-4 col-12">
+        <h3 id="title_rs">Résultats :</h3>
+        <div id="rs" class="p-3">
+           
+
+
+        </div>
+    </div>
+</div>
+<script>
+
+
+function findCombinations(arr, target,tolerence) {
+    const result = [];
+    return new Promise((resolve, reject) => {
+        function findSubset(subset, index, currentSum,tolerence) {
+         
+            if (currentSum >= target - tolerence && currentSum <= target + tolerence ) {
+                result.push([...subset]);
+                return;
+            }
+            if (index >= arr.length || currentSum > target + tolerence) {
+                return;
+            }
+
+            // Inclure l'élément actuel
+            subset.push(arr[index]);
+            findSubset(subset, index + 1, currentSum + arr[index][1],tolerence);
+
+            // Exclure l'élément actuel
+            subset.pop();
+            findSubset(subset, index + 1, currentSum,tolerence);
+            
+        }
+        
+    findSubset([], 0, 0,tolerence);
+    resolve(result);
+    })
+}
+const bt = document.getElementById("bt")
+bt.addEventListener("click",async()=>{
+
+    const fileInput = document.getElementById('fileInput');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert("Veuillez sélectionner un fichier Excel d'abord.");
+        return;
+    }
+
+    document.getElementById("state").innerHTML = `<b> intialisation ..... </b>`
+    const arr = [];
+    const title_arr = []
+    const reader = new FileReader();
+
+    reader.onload =  function (e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook =  XLSX.read(data, { type: 'array' });
+    // document.getElementById("state").innerHTML = `<b> lecture du fichier ..... </b>`
+  
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+
+    // Convertir la feuille en format JSON (tableau 2D)
+    const jsonSheet =XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    title_arr.push(jsonSheet[0])
+
+   // document.getElementById("state").innerHTML = `<b> lecture des donnée ..... </b>`
+    for (let x=1;x<jsonSheet.length && x<60;x++){
+        if(jsonSheet[x][1]>=0){
+            arr.push([jsonSheet[x][0],jsonSheet[x][1]])
+        }
+
+    }
+
+    const target = document.getElementById("cible").value
+    const tolerance = document.getElementById("tolerence").value
+    console.log(tolerance)
+   
+    findCombinations(arr,parseFloat(target),parseFloat(tolerance))
+    .then((result)=>{
+    let del = 1
+    document.getElementById("rs").innerHTML=""
+    document.getElementById("title_rs").innerText= "Combinaison trouvée : "+result.length
+    result.forEach((el,idx)=>{
+            del++
+            setTimeout(() => {
+            
+            const table = document.createElement("table")
+            table.setAttribute("class","table border mb-5 table-borderless text-center show")
+            table.setAttribute("id","tab"+idx)
+            const  title = document.createElement("thead")
+            title.innerHTML = ` <tr><th>${title_arr[0][0]}</th>      <th>${title_arr[0][1]}</th></tr>`
+            title.setAttribute("class","table-dark")
+            table.appendChild(title)
+            const  body = document.createElement("tbody")
+        
+            el.forEach(val=>{
+                const tr = document.createElement("tr")
+                tr.innerHTML = `<td> ${val[0]} </td> <td> ${val[1].toLocaleString()}</td>`
+                body.appendChild(tr)
+            
+            })
+            table.appendChild(body)
+            const tfoot = document.createElement("tfoot")
+            var els = []
+            el.forEach(v=>els.push(v[1]))
+            var sumfoot = els.reduce((acc, currentValue) => acc + currentValue, 0)
+            tfoot.innerHTML = `<tr> <td> <b> total </b> </td> <td> <b> ${sumfoot.toLocaleString()} </b> </td> </tr>`
+            table.appendChild(tfoot)    
+            document.getElementById("rs").appendChild(table)
+            
+
+            anime({
+            targets: table,
+            opacity: [0, 1],
+            translateY: [-20, 0],
+            duration: 1500,
+            easing: 'easeOutQuad'
+        });
+        window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: 'smooth' // Défilement fluide
+        });
+            }, 500*del);
+        
+            })
+    })
+};
+
+    reader.readAsArrayBuffer(file);
+})
+
+
+
+</script>
+
+
+</body>
+</html>
+
+
+
